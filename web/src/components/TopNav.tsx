@@ -98,7 +98,7 @@ export function TopNav({ course, steps, activeSlug, activePart, languages, lang,
       </div>
 
       <div ref={rail} className="quiet-scroll overflow-x-auto">
-        <div className="flex items-center gap-1 px-5 pb-2">
+        <div className="mx-auto flex w-max items-center gap-1 px-5 pb-2">
           {steps.map((step, index) => {
             const isActive = step.slug === activeSlug;
             const accent = `var(--${step.color})`;
