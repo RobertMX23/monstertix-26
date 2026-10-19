@@ -1,0 +1,475 @@
+@import "tailwindcss";
+
+/* Design tokens, shared with the other workshop workbenches: a dark stage by
+   default, a light variant on [data-theme="light"]. MonsterTix's own colours
+   (its teal and lime) are the accents.
+
+   The two that carry the look are `hairline` and `overlay`: both translucent,
+   so a border or a panel sits on whatever is behind it rather than needing a
+   background of its own. That is why panels can stack without every nested box
+   getting darker, and why nothing needs a coloured edge to read as a callout.
+
+   Components use the semantic names (card, overlay, fg-muted, hairline), never
+   raw colours, so they stay theme-agnostic. */
+
+:root {
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --cyan: #2ec4d6;
+  --lime: #a6e22e;
+  --amber: #f59e0b;
+  --green: #34d399;
+  --red: #f43f5e;
+
+  /* The course's step colours, expressed in that palette. */
+  --sky: var(--blue);
+  --violet: var(--purple);
+  --emerald: var(--green);
+  --rose: var(--red);
+  --fuchsia: var(--purple);
+  --teal: var(--cyan);
+  --accent: var(--cyan);
+
+  --stage: #08080b;
+  --card: #121217;
+  --card-hover: #1b1b22;
+  --input: #17171f;
+  --fg: #f5f3f0;
+  --fg-muted: #9ca3af;
+  --fg-faint: #6b7280;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.18);
+  --overlay: rgba(255, 255, 255, 0.05);
+  --spotlight: rgba(139, 92, 246, 0.14);
+
+  --ok: var(--green);
+  --bad: var(--red);
+  --code-bg: #0d0d12;
+  --code-fg: #e8e6e3;
+  /* code on the page (blocks, explorer, command output): follows the theme, unlike the terminal */
+  --viewer-bg: #0d0d12;
+  --viewer-fg: #e8e6e3;
+  /* Syntax colours for code shown in figures and pop-ups. */
+  --syn-key: #7cc7ff;
+  --syn-str: #a5d6a7;
+  --syn-num: #f5b971;
+  --syn-kw: #c792ea;
+  --syn-punct: #8b8b99;
+
+  --aurora-opacity: 0.5;
+  --aurora-blend: screen;
+  --grid-opacity: 0.05;
+
+  color-scheme: dark;
+}
+
+/* The light theme uses darker shades of the same hues, so labels and thin
+   strokes in the figures stay readable on white. */
+:root[data-theme="light"] {
+  --blue: #1d4ed8;
+  --purple: #6d28d9;
+  --cyan: #0e7490;
+  --lime: #4d7c0f;
+  --amber: #b45309;
+  --green: #047857;
+  --red: #be123c;
+
+  --stage: #f9f9fb;
+  --card: #ffffff;
+  --card-hover: #f4f4f5;
+  --input: #ffffff;
+  --fg: #18181b;
+  --fg-muted: #52525b;
+  --fg-faint: #8b8b95;
+  --hairline: rgba(0, 0, 0, 0.09);
+  --hairline-strong: rgba(0, 0, 0, 0.18);
+  --overlay: rgba(0, 0, 0, 0.035);
+  --spotlight: rgba(139, 92, 246, 0.06);
+
+  --code-bg: #15151b;
+  --code-fg: #e8e6e3;
+  --viewer-bg: #fbfbfa;
+  --viewer-fg: #1f2328;
+  --syn-key: #0550ae;
+  --syn-str: #0a7d3e;
+  --syn-num: #b35900;
+  --syn-kw: #8250df;
+  --syn-punct: #6e7781;
+
+  --aurora-opacity: 0.13;
+  --aurora-blend: multiply;
+  --grid-opacity: 0.035;
+
+  color-scheme: light;
+}
+
+html, body, #root { min-height: 100%; }
+
+body {
+  margin: 0;
+  background-color: var(--stage);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+
+.text-balance { text-wrap: balance; }
+
+/* ── the ambient stage ──────────────────────────────────────────────────── */
+
+.ambience { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+
+.ambience__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: var(--aurora-opacity);
+  mix-blend-mode: var(--aurora-blend);
+  will-change: transform;
+}
+
+.ambience__blob--one {
+  width: 46vw; height: 46vw; min-width: 320px; min-height: 320px;
+  top: -14vw; left: -6vw;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 68%);
+  animation: drift-a 23s ease-in-out infinite;
+}
+
+.ambience__blob--two {
+  width: 42vw; height: 42vw; min-width: 300px; min-height: 300px;
+  top: -8vw; right: -8vw;
+  background: radial-gradient(circle, var(--purple) 0%, transparent 68%);
+  animation: drift-b 31s ease-in-out infinite;
+}
+
+.ambience__blob--three {
+  width: 34vw; height: 34vw; min-width: 240px; min-height: 240px;
+  top: 34vh; left: 38%;
+  background: radial-gradient(circle, var(--cyan) 0%, transparent 70%);
+  opacity: calc(var(--aurora-opacity) * 0.55);
+  animation: drift-c 37s ease-in-out infinite;
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(8vw, 6vh, 0) scale(1.14); }
+  66% { transform: translate3d(3vw, 12vh, 0) scale(0.92); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  40% { transform: translate3d(-10vw, 8vh, 0) scale(1.18); }
+  70% { transform: translate3d(-4vw, 2vh, 0) scale(0.9); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate3d(-50%, 0, 0) scale(1); }
+  50% { transform: translate3d(-50%, -16vh, 0) scale(1.25); }
+}
+
+.ambience__grid {
+  position: absolute; inset: 0;
+  opacity: var(--grid-opacity);
+  background-image:
+    linear-gradient(to right, var(--fg) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--fg) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(120% 70% at 50% 0%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(120% 70% at 50% 0%, #000 0%, transparent 70%);
+}
+
+.stage-vignette::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background:
+    radial-gradient(110% 70% at 50% 0%, var(--spotlight) 0%, transparent 60%),
+    radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+:root[data-theme="light"] .stage-vignette::before {
+  background: radial-gradient(110% 70% at 50% 0%, var(--spotlight) 0%, transparent 60%);
+}
+
+/* Content sits above the stage. */
+.stage-content { position: relative; z-index: 2; }
+
+/* ── type ───────────────────────────────────────────────────────────────── */
+
+.kicker {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+}
+
+.display {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.prose { max-width: none; }
+
+.prose h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 2.25rem 0 0.75rem;
+  line-height: 1.3;
+}
+
+.prose h3 {
+  font-size: 1.02rem;
+  font-weight: 650;
+  margin: 1.6rem 0 0.5rem;
+}
+
+.prose p { margin: 0 0 1rem; color: var(--fg-muted); }
+.prose strong { font-weight: 650; color: var(--fg); }
+.prose em { font-style: italic; }
+
+.prose ul, .prose ol { margin: 0 0 1.15rem; padding-left: 1.3rem; color: var(--fg-muted); }
+.prose li { margin: 0.3rem 0; }
+.prose ul { list-style: disc; }
+.prose ol { list-style: decimal; }
+
+.prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.prose code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.86em;
+  background: var(--overlay);
+  border: 1px solid var(--hairline);
+  border-radius: 0.35em;
+  padding: 0.1em 0.35em;
+  color: var(--fg);
+}
+
+.prose pre {
+  background: var(--viewer-bg);
+  color: var(--viewer-fg);
+  border: 1px solid var(--hairline);
+  border-radius: 1rem;
+  padding: 0.9rem 1.05rem;
+  overflow-x: auto;
+  margin: 0 0 1.15rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+/* Code blocks follow the theme (--viewer-*); only the terminal stays dark.
+   `color: inherit` keeps an inline code chip's colour from overriding the pre. */
+.prose pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--hairline-strong);
+  padding-left: 1rem;
+  color: var(--fg-faint);
+  margin: 0 0 1.15rem;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.35rem;
+  font-size: 0.92rem;
+}
+.prose thead th {
+  text-align: left;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 500;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding: 0 0.75rem 0.6rem 0;
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.prose tbody td {
+  padding: 0.65rem 0.75rem 0.65rem 0;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+  color: var(--fg-muted);
+}
+.prose tbody tr:last-child td { border-bottom: 0; }
+
+.table-scroll { overflow-x: auto; }
+
+/* ── scrollbar ──────────────────────────────────────────────────────────── */
+
+.quiet-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+.quiet-scroll::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: 99px;
+}
+.quiet-scroll::-webkit-scrollbar-track { background: transparent; }
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* A line the last step rewrote. It arrives lit and settles, so the change is
+   noticed without anyone having to diff two screenshots in their head. */
+@keyframes line-settle {
+  from { background: color-mix(in srgb, var(--accent) 34%, transparent); }
+  to   { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+}
+
+.line-changed {
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+  animation: line-settle 1.4s ease-out;
+}
+
+@keyframes working-sweep {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(400%); }
+}
+
+.working-bar {
+  position: relative;
+  overflow: hidden;
+  background: var(--overlay);
+}
+
+.working-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 25%;
+  background: linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--accent) 55%, transparent), transparent);
+  animation: working-sweep 1.3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* `code` in task text (step.yaml), the same chip as .prose code */
+.inline-code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.86em;
+  background: var(--overlay);
+  border: 1px solid var(--hairline);
+  border-radius: 0.35em;
+  padding: 0.05em 0.35em;
+  color: var(--fg);
+}
+/* on the always-dark terminal */
+.inline-code.on-dark {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--code-fg);
+}
+
+/* ── the page: the step, with the venue panel on the left where a step uses it ── */
+
+.bench {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: calc(100vh - var(--nav-height, 7rem));
+}
+
+.bench[data-rail="none"] { grid-template-columns: minmax(0, 1fr); }
+.bench[data-rail="closed"] { grid-template-columns: 2.75rem minmax(0, 1fr); }
+/* Holding the venue panel, the column needs the panel's width. */
+.bench[data-rail="wide"] { grid-template-columns: minmax(22rem, 30vw) minmax(0, 1fr); }
+
+.bench__rail {
+  position: sticky;
+  top: var(--nav-height, 7rem);
+  height: calc(100vh - var(--nav-height, 7rem));
+  overflow: hidden;
+  border-right: 1px solid var(--hairline);
+}
+
+.bench__main { min-width: 0; padding-inline: 1.5rem; }
+
+/* An app framed in the reading. Drag the bottom-right corner to make it taller. */
+.app-dock__body {
+  height: 640px;
+  min-height: 320px;
+  max-height: 90vh;
+  resize: vertical;
+  overflow: hidden;
+}
+
+/* Narrow screens: the services become a strip above the step. */
+@media (max-width: 900px) {
+  .bench, .bench[data-rail="closed"], .bench[data-rail="wide"] { grid-template-columns: minmax(0, 1fr); }
+  .bench__rail {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .bench[data-rail="wide"] .bench__rail { height: 70vh; }
+  .bench__main { padding-inline: 1rem; }
+  .app-dock__body { height: 520px; }
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-dot { 50% { opacity: 0.35; } }
+.dot--busy { animation: pulse-dot 1s ease-in-out infinite; }
+
+.log {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--hairline-strong);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { color: var(--fg); border-color: var(--fg-faint); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn--solid { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn--solid:hover:not(:disabled) { color: #fff; filter: brightness(1.08); }
+:root:not([data-theme="light"]) .btn--solid { color: #06141a; }
+:root:not([data-theme="light"]) .btn--solid:hover:not(:disabled) { color: #06141a; }
+.btn--danger { border-color: color-mix(in srgb, var(--red) 60%, transparent); color: var(--red); }
+.btn--danger:hover:not(:disabled) { color: #fff; background: var(--red); border-color: var(--red); }
+.btn--venue { border-color: color-mix(in srgb, var(--lime) 55%, transparent); color: var(--lime); font-weight: 600; letter-spacing: 0.04em; }
+
+/* The waiting caret on a :::terminal command line. */
+@keyframes caret-blink { 50% { opacity: 0; } }
+.terminal-caret { margin-left: 0.15rem; color: #7ee787; animation: caret-blink 1.1s step-end infinite; }

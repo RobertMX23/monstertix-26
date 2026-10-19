@@ -232,7 +232,7 @@
           <button data-mult="10">10&times;</button>
           <button data-mult="60">60&times;</button>
         </div>
-        <button class="btn" onclick="hit('/admin/advance-queue')">
+        <button class="btn" onclick="hit('admin/advance-queue')">
           <b>SKIP THE WAIT</b>
         </button>
       </div>
@@ -246,11 +246,11 @@
           <b>SELL THE CHEAP SEATS</b>
           <span>Section C goes to zero. Only seats above a small budget are left.</span>
         </button>
-        <button class="btn danger" onclick="hit('/admin/hang-once')">
+        <button class="btn danger" onclick="hit('admin/hang-once')">
           <b>BREAK THE NEXT PURCHASE</b>
           <span>Order is charged, then the reply fails. The runtime retries and buys again.</span>
         </button>
-        <button class="btn reset" onclick="hit('/admin/reset')">
+        <button class="btn reset" onclick="hit('admin/reset')">
           <b>RESET THE VENUE</b>
           <span>Back to 8 shows, all seats available, clock at 1&times;. Your chat history is untouched.</span>
         </button>
@@ -268,8 +268,8 @@
            margin:2px 0 3px">&nbsp;</div>
       <p class="blurb">The only artist this venue sells. Everything the agent can
         buy is below. Sell a section out and any plan it already made goes stale.</p>
-      <img class="poster" src="/themidnightsignal.png" alt="The Midnight Signal">
-      <audio class="tune" controls preload="none" src="/midnight_breach.mp3">
+      <img class="poster" src="themidnightsignal.png" alt="The Midnight Signal">
+      <audio class="tune" controls preload="none" src="midnight_breach.mp3">
         Your browser cannot play this.
       </audio>
       <table id="inventory"></table>
@@ -297,10 +297,10 @@ async function hit(path, body) {
 function sellout(section) {
   // Every Amsterdam show, both days. Picking one row out of the listing broke
   // the moment the listing was reordered.
-  hit('/admin/sellout', {city: 'Amsterdam', section: section || 'A'});
+  hit('admin/sellout', {city: 'Amsterdam', section: section || 'A'});
 }
 document.querySelectorAll('#clock button').forEach(b => {
-  b.onclick = () => hit('/admin/clock', {multiplier: +b.dataset.mult});
+  b.onclick = () => hit('admin/clock', {multiplier: +b.dataset.mult});
 });
 
 const n = x => x.toLocaleString();
@@ -417,7 +417,7 @@ function renderFeed(events) {
 }
 
 async function refresh() {
-  try { S = await (await fetch('/admin/state')).json(); }
+  try { S = await (await fetch('admin/state')).json(); }
   catch { $('status-line').textContent = 'Venue is not responding';
           $('status-sub').textContent = 'Is python -m venue still running?';
           $('status').className = 'bad'; return; }

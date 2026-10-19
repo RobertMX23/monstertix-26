@@ -1,0 +1,191 @@
+import { useEffect, useState } from "react";
+import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate, useParams } from "react-router-dom";
+
+import { api, type CoursePayload, type StepFull } from "./lib/api";
+import { setStages } from "./lib/numbers";
+import { BenchProvider, useBench } from "./lib/bench";
+import { LangProvider, saveLang, savedLang, t } from "./i18n";
+import { Content } from "./components/Content";
+import { VenueRail } from "./components/VenueRail";
+import { TopNav } from "./components/TopNav";
+import { Watch } from "./components/Watch";
+
+/* The bench: the step, full width. Apps are not in a column of their own:
+   each one appears in the reading under the "Your turn" card that uses it,
+   with its process's switch at the card's top right. Only the steps about
+   the world (`venue: true`) keep a left column, for the live venue panel. */
+
+function neighbours(course: CoursePayload, slug: string, partId: string) {
+  const flat: { slug: string; part: string; label: string }[] = [];
+  for (const step of course.steps) {
+    const parts = step.parts.length > 1 ? step.parts : [{ id: step.parts[0]?.id ?? "", label: "" }];
+    for (const part of parts) flat.push({ slug: step.slug, part: part.id, label: part.label || step.title });
+  }
+  const index = flat.findIndex((e) => e.slug === slug && (e.part === partId || !e.part));
+  return { flat, index, previous: index > 0 ? flat[index - 1] : null, next: index >= 0 && index < flat.length - 1 ? flat[index + 1] : null };
+}
+
+const href = (e: { slug: string; part: string }) => (e.part ? `/step/${e.slug}/${e.part}` : `/step/${e.slug}`);
+
+function StepPage({ course, lang, onLang }: { course: CoursePayload; lang: string; onLang: (l: string) => void }) {
+  const { slug = "", part: partParam } = useParams();
+  const navigate = useNavigate();
+  const { railOpen, setVenueOnLeft } = useBench();
+  const [step, setStep] = useState<StepFull | null>(null);
+
+  useEffect(() => {
+    api.step(slug, lang).then(setStep).catch(() => setStep(null));
+    window.scrollTo({ top: 0 });
+  }, [slug, partParam, lang]);
+
+  const part = step?.parts.find((p) => p.id === (partParam ?? "")) ?? step?.parts[0] ?? null;
+  const partId = part?.id ?? "";
+  const many = (step?.parts.length ?? 0) > 1;
+  // The venue panel sits on the left for a whole step (`venue: true` on the
+  // step) or for one part (`venue: true` on the part).
+  const venueOnLeft = !!step && (step.venue || !!part?.venue);
+  useEffect(() => setVenueOnLeft(venueOnLeft), [venueOnLeft, setVenueOnLeft]);
+  const { previous, next, index, flat } = neighbours(course, slug, partId);
+  const accent = `var(--${step?.color ?? "cyan"})`;
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--accent", accent);
+  }, [accent]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (event.key === "ArrowRight" && next) navigate(href(next));
+      if (event.key === "ArrowLeft" && previous) navigate(href(previous));
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [next, previous, navigate]);
+
+  return (
+    <>
+      <TopNav course={course.course} steps={course.steps} activeSlug={slug} activePart={partId}
+              languages={course.languages} lang={lang} onLang={onLang} />
+      <div className="bench" data-rail={!venueOnLeft ? "none" : railOpen ? "wide" : "closed"}>
+        {venueOnLeft && <aside className="bench__rail"><VenueRail /></aside>}
+
+        <main className="bench__main">
+          <div className="mx-auto max-w-[56rem] pb-24">
+            {!step || !part ? (
+              <div className="py-28 text-center text-sm" style={{ color: "var(--fg-faint)" }}>{t("loading…")}</div>
+            ) : (
+              <>
+                <div className="px-1 pt-12 pb-3 text-center">
+                  <div className="kicker" style={{ color: accent }}>
+                    {step.kicker}{many && part.id ? part.id : ""}{many && part.label ? ` · ${part.label}` : ""}
+                  </div>
+                  <h1 className="display text-balance mx-auto mt-4 text-[2.2rem] leading-[1.1] sm:text-[2.6rem]">
+                    {part.headline || step.title}
+                  </h1>
+                  {step.summary && (!many || part === step.parts[0]) && (
+                    <p className="text-balance mx-auto mt-4 max-w-2xl text-[1.02rem] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+                      {step.summary}
+                    </p>
+                  )}
+                </div>
+
+                <Content markdown={part.body} slug={step.slug} color={accent} exercises={part.exercises} stage={step.stage} />
+                <Watch slug={step.slug} part={part.id} checks={part.checks} expect={part.expect} title={part.checksTitle} color={accent} />
+
+                <nav className="mt-12 flex items-center justify-between gap-4 border-t pt-6 text-sm" style={{ borderColor: "var(--hairline)" }}>
+                  {previous ? (
+                    <button type="button" onClick={() => navigate(href(previous))} className="min-w-0 text-left" style={{ color: "var(--fg-muted)" }}>
+                      <span className="kicker block" style={{ color: "var(--fg-faint)" }}>{t("back")}</span>
+                      <span className="truncate">← {previous.label}</span>
+                    </button>
+                  ) : <span />}
+                  <span className="shrink-0 text-xs" style={{ color: "var(--fg-faint)" }}>{index + 1} / {flat.length}</span>
+                  {next ? (
+                    <button type="button" onClick={() => navigate(href(next))} className="min-w-0 text-right" style={{ color: accent }}>
+                      <span className="kicker block" style={{ color: "var(--fg-faint)" }}>{t("next")}</span>
+                      <span className="truncate font-medium">{next.label} →</span>
+                    </button>
+                  ) : <span />}
+                </nav>
+                {course.course.credit && (
+                  <p className="mt-12 text-center text-[0.76rem]" style={{ color: "var(--fg-faint)" }}>{course.course.credit}</p>
+                )}
+              </>
+            )}
+          </div>
+        </main>
+
+      </div>
+    </>
+  );
+}
+
+export default function App() {
+  const [lang, setLangState] = useState(savedLang);
+  const [course, setCourse] = useState<CoursePayload | null>(null);
+
+  useEffect(() => {
+    api.course(lang).then((payload) => {
+      setStages(payload.steps);
+      setCourse(payload);
+      // A language nobody has translated yet falls back to English.
+      if (payload.lang !== lang) setLangState(payload.lang);
+    }).catch(() => setCourse(null));
+  }, [lang]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("monstertix.theme");
+      document.documentElement.dataset.theme = saved === "light" ? "light"
+        : saved === "dark" ? "dark"
+        : window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    } catch {
+      document.documentElement.dataset.theme = "dark";
+    }
+  }, []);
+
+  const changeLang = (next: string) => {
+    saveLang(next);
+    setLangState(next);
+  };
+
+  const ambience = (
+    <div className="ambience" aria-hidden>
+      <div className="ambience__blob ambience__blob--one" />
+      <div className="ambience__blob ambience__blob--two" />
+      <div className="ambience__grid" />
+    </div>
+  );
+
+  if (!course) {
+    return (
+      <>
+        {ambience}
+        <div className="stage-content grid h-screen place-items-center text-sm" style={{ color: "var(--fg-faint)" }}>
+          {t("loading the workshop…")}
+        </div>
+      </>
+    );
+  }
+
+  const first = course.steps[0]?.slug ?? "";
+  const effective = course.languages.includes(lang) ? lang : "en";
+  return (
+    <LangProvider lang={effective}>
+      <BenchProvider>
+        <div className="stage-vignette">
+          {ambience}
+          <Router>
+            <Routes>
+              <Route path="/" element={<Navigate to={`/step/${first}`} replace />} />
+              <Route path="/step/:slug" element={<StepPage course={course} lang={effective} onLang={changeLang} />} />
+              <Route path="/step/:slug/:part" element={<StepPage course={course} lang={effective} onLang={changeLang} />} />
+              <Route path="*" element={<Navigate to={`/step/${first}`} replace />} />
+            </Routes>
+          </Router>
+        </div>
+      </BenchProvider>
+    </LangProvider>
+  );
+}

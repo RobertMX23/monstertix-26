@@ -55,7 +55,8 @@ Each one adds a single idea, and each has complete working code in `solutions/`.
 ## Repo layout
 
 ```
-setup.sh                 one command: venv, auth, APIs, .env, seed, Cloud SQL, venue
+setup.sh                 one command: venv, auth, APIs, .env, seed, Cloud SQL, venue, workbench
+workbench.sh             the workbench on :4800: start, stop, restart
 verify.sh                eight ticks. run it before you trust anything
 use-solution.sh N        load step N's code and reset the world around it
 deploy-venue.sh          your own venue on Cloud Run
@@ -83,6 +84,9 @@ monstertix/              the chat frontend and the trigger, from step 3
   index.html             the page students actually hand to someone
 
 solutions/               one folder per step. use-solution.sh copies from here
+content/                 the workbench's steps: step.yaml and markdown, per step
+workbench/               the workbench server: processes, checks, the proxy
+web/                     the workbench page (React). Built by workbench.sh
 tests/                   one folder per step, mirroring solutions/
 seed/                    the two-days-ago conversation, and the memory file
 docs/
@@ -141,6 +145,34 @@ instance **in the background** for step 10, and deploys the venue.
 **Every step of it is safe to re-run.** It reuses an existing `.venv`, remembers
 the project id in `~/project_id.txt`, skips APIs that are already on, and will
 not create a second Cloud SQL instance.
+
+### The workbench
+
+`setup.sh` finishes by starting the **workbench** on port 4800: every step of
+the codelab as a page, with the processes it needs as switches.
+
+```
+./workbench.sh            start it in the background (log: runs/workbench.log)
+./workbench.sh stop       stop it, and everything it started
+./workbench.sh restart    after a git pull: rebuilds the page if it changed
+./workbench.sh fg         in this terminal; Ctrl-C stops everything
+```
+
+In Cloud Shell, open it with Web Preview → Change port → 4800.
+
+| Where | What it is |
+|---|---|
+| **the step** | the reading, a file explorer that marks what the step changed and highlights the lines that matter, the numbered things to do, and checks that tick on their own |
+| **under each "Your turn"** | the app that card uses (the ADK web UI, the venue panel, the MonsterTix page), framed through the workbench at `/svc/<name>/` so one port is enough. Its process's switch and log are at the card's top right; the agent's card also has **kill -9**, for step 6 |
+| **left, in step 1 and wherever a part uses the venue** | the live venue panel, which folds away. The venue starts with the workbench and is always on |
+
+Each step's **Load step N** button does what the codelab does at the top of a
+step: stop the agent, press RESET THE VENUE, `./use-solution.sh N --force`,
+start the agent again.
+
+The steps are written in `content/`; see [`content/README.md`](content/README.md)
+for the format and for adding a language. After editing them, run
+`python -m workbench.check`. The server is `workbench/`, the page `web/`.
 
 ### Credentials
 

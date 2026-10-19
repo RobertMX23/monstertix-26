@@ -249,7 +249,7 @@ async function ask(text) {
   send.disabled = true;
   document.getElementById("status").textContent = "thinking…";
   try {
-    const r = await fetch("/wake", {
+    const r = await fetch("wake", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: text, session_id: SESSION }),
@@ -295,7 +295,7 @@ box.addEventListener("input", () => {
 const scrim = document.getElementById("scrim");
 
 document.getElementById("newSession").onclick = async () => {
-  const r = await fetch("/session/new", { method: "POST" });
+  const r = await fetch("session/new", { method: "POST" });
   SESSION = (await r.json()).session_id;
   thread.innerHTML = "";
   bubble("New session. I have forgotten this conversation — including whatever "
@@ -303,7 +303,7 @@ document.getElementById("newSession").onclick = async () => {
 };
 
 document.getElementById("wipe").onclick = async () => {
-  const r = await fetch("/health");
+  const r = await fetch("health");
   const h = await r.json();
   document.getElementById("whereText").textContent =
     "sessions → " + h.sessions + "\nmemory  → " + h.memory;
@@ -314,7 +314,7 @@ scrim.onclick = (e) => { if (e.target === scrim) scrim.classList.remove("open");
 
 document.getElementById("confirm").onclick = async () => {
   scrim.classList.remove("open");
-  const r = await fetch("/admin/wipe", { method: "POST" });
+  const r = await fetch("admin/wipe", { method: "POST" });
   const d = await r.json();
   SESSION = d.session_id;
   thread.innerHTML = "";

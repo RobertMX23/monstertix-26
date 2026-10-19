@@ -57,3 +57,7 @@ CLAUDE.local.md
 .github/copilot-instructions.md
 AGENTS.md
 .agent/
+
+# --- the workbench ----------------------------------------------------------
+# Process logs, pids and job output. Rebuilt on every run.
+runs/

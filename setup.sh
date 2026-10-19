@@ -494,5 +494,14 @@ else
 fi
 echo ""
 echo "  check it:    ./verify.sh"
-echo "  then:        source .venv/bin/activate"
-echo "               adk web agent      # the exact command is in the codelab"
+echo ""
+
+# The workbench: every step in the browser, with the venue, the agent,
+# MonsterTix and the clock as switches. A failure here does not fail setup;
+# the codelab's terminal commands work without it.
+if ./workbench.sh start; then
+  :
+else
+  echo "  ⚠ the workbench did not start. The codelab works without it."
+  echo "    Try again with:  ./workbench.sh"
+fi
